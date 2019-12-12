@@ -14,4 +14,5 @@ RUN apt-get update \
 
 RUN mkdir -p /docker-entrypoint-initdb.d
 COPY ./initdb-postgis.sh /docker-entrypoint-initdb.d/postgis.sh
+COPY ./untar_seed_data.sh /docker-entrypoint-initdb.d/zz_untar.sh
 COPY ./update-postgis.sh /usr/local/bin
