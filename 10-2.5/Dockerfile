@@ -13,6 +13,8 @@ RUN apt-get update \
       && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /docker-entrypoint-initdb.d
+
+# executed in alphabetical order
+COPY ./seed_db.sh /docker-entrypoint-initdb.d/aa_seed_db.sh
 COPY ./initdb-postgis.sh /docker-entrypoint-initdb.d/postgis.sh
-COPY ./untar_seed_data.sh /docker-entrypoint-initdb.d/zz_untar.sh
 COPY ./update-postgis.sh /usr/local/bin
