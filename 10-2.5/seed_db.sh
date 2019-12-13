@@ -1,7 +1,7 @@
 #!/bin/bash
 set -u
 
-PSQL_DIR="/tmp/test"
+PSQL_DIR="/var/lib/postgresql/"
 PSQL_TAR_SEED="/opt/postgres-seed.tar.gz"
 
 function exists(){
@@ -23,19 +23,14 @@ function is_empty(){
 }
 
 
-
-
-if  exists "$PSQL_DIR"; then
-    echo "no exist"
-    exit 1
+if ! exists "$PSQL_DIR" ; then
+    echo Creating "$PSQL_DIR..."
+    mkdir "$PSQL_DIR"
 fi
 
 if  is_empty "$PSQL_DIR"; then
-    echo "empty"
- else 
-    echo "not empty"
+    echo "Planting postgres data seed..."
+    tar -xzf "$PSQL_TAR_SEED" -C "$PSQL_DIR"
+else 
+    echo "psql dir not empty omgggg "
 fi
-
-#if no files in regular dir
-#
-#untar seed dir if exists
