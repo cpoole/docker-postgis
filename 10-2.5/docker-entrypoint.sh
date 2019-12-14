@@ -6,7 +6,6 @@ echo "Running forked & modified docker entrypoint..."
 PSQL_DIR="/var/lib/postgresql/"
 PSQL_TAR_SEED="/opt/postgres-seed.tar.gz"
 
-touch $PSQL_TAR_SEED
 
 function exists(){
     if  [[ -z $( stat "$1" 2>/dev/null) ]]; then
