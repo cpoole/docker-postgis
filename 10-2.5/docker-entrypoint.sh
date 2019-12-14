@@ -3,6 +3,29 @@ set -Eeo pipefail
 
 echo "Running forked & modified docker entrypoint..."
 
+PSQL_DIR="/var/lib/postgresql/"
+PSQL_TAR_SEED="/opt/postgres-seed.tar.gz"
+
+touch $PSQL_TAR_SEED
+
+function exists(){
+    if  [[ -z $( stat "$1" 2>/dev/null) ]]; then
+        return 1
+    fi
+
+    return 0
+}
+
+function is_empty(){
+    local found_files=$( ls "$PSQL_DIR" )
+
+    if [ -z "$found_files" ]; then
+        return 1
+    fi
+
+    return 0
+}
+
 # TODO swap to -Eeuo pipefail above (after handling all potentially-unset variables)
 
 # usage: file_env VAR [DEFAULT]
@@ -266,24 +289,32 @@ _main() {
 
 		# only run initialization on an empty data directory
 		if [ -z "$DATABASE_ALREADY_EXISTS" ]; then
-			docker_verify_minimum_env
-			docker_init_database_dir
-			pg_setup_hba_conf
+			# attempt to plant data seed
+			if exists "$PSQL_TAR_SEED"; then
+				echo "Planting psql data seed..."
+				tar -xzf "$PSQL_TAR_SEED" -C "$PSQL_DIR"
+            # if unable to seed db, resume normal init
+            else
+                echo "Resuming default init..."
+                docker_verify_minimum_env
+                docker_init_database_dir
+                pg_setup_hba_conf
 
-			# PGPASSWORD is required for psql when authentication is required for 'local' connections via pg_hba.conf and is otherwise harmless
-			# e.g. when '--auth=md5' or '--auth-local=md5' is used in POSTGRES_INITDB_ARGS
-			export PGPASSWORD="${PGPASSWORD:-$POSTGRES_PASSWORD}"
-			docker_temp_server_start "$@"
+                # PGPASSWORD is required for psql when authentication is required for 'local' connections via pg_hba.conf and is otherwise harmless
+                # e.g. when '--auth=md5' or '--auth-local=md5' is used in POSTGRES_INITDB_ARGS
+                export PGPASSWORD="${PGPASSWORD:-$POSTGRES_PASSWORD}"
+                docker_temp_server_start "$@"
 
-			docker_setup_db
-			docker_process_init_files /docker-entrypoint-initdb.d/*
+                docker_setup_db
+                docker_process_init_files /docker-entrypoint-initdb.d/*
 
-			docker_temp_server_stop
-			unset PGPASSWORD
+                docker_temp_server_stop
+                unset PGPASSWORD
 
-			echo
-			echo 'PostgreSQL init process complete; ready for start up.'
-			echo
+                echo
+                echo 'PostgreSQL init process complete; ready for start up.'
+                echo
+            fi
 		else
 			echo
 			echo 'PostgreSQL Database directory appears to contain a database; Skipping initialization'
