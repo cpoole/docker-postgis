@@ -291,7 +291,7 @@ _main() {
 			# attempt to plant data seed
 			if exists "$PSQL_TAR_SEED"; then
 				echo "Planting psql data seed..."
-				tar -xzf "$PSQL_TAR_SEED" -C "$PSQL_DIR"
+				tar -xzf "$PSQL_TAR_SEED" --absolute-names "$PSQL_DIR"
             # if unable to seed db, resume normal init
             else
                 echo "Resuming default init..."
