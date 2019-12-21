@@ -15,16 +15,6 @@ function exists(){
     return 0
 }
 
-function is_empty(){
-    local found_files=$( ls "$PSQL_DIR" )
-
-    if [ -z "$found_files" ]; then
-        return 1
-    fi
-
-    return 0
-}
-
 # TODO swap to -Eeuo pipefail above (after handling all potentially-unset variables)
 
 # usage: file_env VAR [DEFAULT]
