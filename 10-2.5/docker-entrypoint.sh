@@ -8,11 +8,11 @@ PSQL_TAR_SEED="/opt/postgres-seed.tar.gz"
 
 
 function exists(){
-    if  [[ -z $( stat "$1" 2>/dev/null) ]]; then
-        return 1
-    fi
+		if  [[ -z $( stat "$1" 2>/dev/null) ]]; then
+				return 1
+		fi
 
-    return 0
+		return 0
 }
 
 # TODO swap to -Eeuo pipefail above (after handling all potentially-unset variables)
@@ -111,10 +111,10 @@ docker_verify_minimum_env() {
 
 			WARNING: The supplied POSTGRES_PASSWORD is 100+ characters.
 
-			  This will not work if used via PGPASSWORD with "psql".
+				This will not work if used via PGPASSWORD with "psql".
 
-			  https://www.postgresql.org/message-id/flat/E1Rqxp2-0004Qt-PL%40wrigleys.postgresql.org (BUG #6412)
-			  https://github.com/docker-library/postgres/issues/507
+				https://www.postgresql.org/message-id/flat/E1Rqxp2-0004Qt-PL%40wrigleys.postgresql.org (BUG #6412)
+				https://github.com/docker-library/postgres/issues/507
 
 		EOWARN
 	fi
@@ -123,14 +123,14 @@ docker_verify_minimum_env() {
 		cat >&2 <<-'EOWARN'
 			****************************************************
 			WARNING: No password has been set for the database.
-			         This will allow anyone with access to the
-			         Postgres port to access your database. In
-			         Docker's default configuration, this is
-			         effectively any other container on the same
-			         system.
+							 This will allow anyone with access to the
+							 Postgres port to access your database. In
+							 Docker's default configuration, this is
+							 effectively any other container on the same
+							 system.
 
-			         Use "-e POSTGRES_PASSWORD=password" to set
-			         it in "docker run".
+							 Use "-e POSTGRES_PASSWORD=password" to set
+							 it in "docker run".
 			****************************************************
 		EOWARN
 
@@ -271,43 +271,44 @@ _main() {
 		docker_setup_env
 		# setup data directories and permissions (when run as root)
 		docker_create_db_directories
-		if [ "$(id -u)" = '0' ]; then
-			# then restart script as postgres user
-			exec gosu postgres "$BASH_SOURCE" "$@"
-		fi
 
-		# only run initialization on an empty data directory
+				# only run initialization on an empty data directory
 		if [ -z "$DATABASE_ALREADY_EXISTS" ]; then
 			# attempt to plant data seed
 			if exists "$PSQL_TAR_SEED"; then
 				echo "Planting psql data seed..."
 				tar -xzf "$PSQL_TAR_SEED" --absolute-names "$PSQL_DIR"
-            # if unable to seed db, resume normal init
-            else
-                echo "Resuming default init..."
-                docker_verify_minimum_env
-                docker_init_database_dir
-                pg_setup_hba_conf
+			# if unable to seed db, resume normal init
+			else
+				echo "Resuming default init..."
+				docker_verify_minimum_env
+				docker_init_database_dir
+				pg_setup_hba_conf
 
-                # PGPASSWORD is required for psql when authentication is required for 'local' connections via pg_hba.conf and is otherwise harmless
-                # e.g. when '--auth=md5' or '--auth-local=md5' is used in POSTGRES_INITDB_ARGS
-                export PGPASSWORD="${PGPASSWORD:-$POSTGRES_PASSWORD}"
-                docker_temp_server_start "$@"
+				# PGPASSWORD is required for psql when authentication is required for 'local' connections via pg_hba.conf and is otherwise harmless
+				# e.g. when '--auth=md5' or '--auth-local=md5' is used in POSTGRES_INITDB_ARGS
+				export PGPASSWORD="${PGPASSWORD:-$POSTGRES_PASSWORD}"
+				docker_temp_server_start "$@"
 
-                docker_setup_db
-                docker_process_init_files /docker-entrypoint-initdb.d/*
+				docker_setup_db
+				docker_process_init_files /docker-entrypoint-initdb.d/*
 
-                docker_temp_server_stop
-                unset PGPASSWORD
+				docker_temp_server_stop
+				unset PGPASSWORD
 
-                echo
-                echo 'PostgreSQL init process complete; ready for start up.'
-                echo
-            fi
+				echo
+				echo 'PostgreSQL init process complete; ready for start up.'
+				echo
+			fi
 		else
 			echo
 			echo 'PostgreSQL Database directory appears to contain a database; Skipping initialization'
 			echo
+		fi
+
+		if [ "$(id -u)" = '0' ]; then
+			# then restart script as postgres user
+			exec gosu postgres "$BASH_SOURCE" "$@"
 		fi
 	fi
 
