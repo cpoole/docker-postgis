@@ -3,7 +3,6 @@ set -Eeo pipefail
 
 echo "Running forked & modified docker entrypoint..."
 
-PSQL_DIR="/var/lib/postgresql/"
 PSQL_TAR_SEED="/opt/postgres-seed.tar.gz"
 
 
@@ -62,15 +61,15 @@ docker_create_db_directories() {
 	if [ "$POSTGRES_INITDB_WALDIR" ]; then
 		mkdir -p "$POSTGRES_INITDB_WALDIR"
 		if [ "$user" = '0' ]; then
-			find "$POSTGRES_INITDB_WALDIR" \! -user postgres -exec chown postgres '{}' +
+			find "$POSTGRES_INITDB_WALDIR" \! -user postgres -exec chown postgres '{}'
 		fi
 		chmod 700 "$POSTGRES_INITDB_WALDIR"
 	fi
 
 	# allow the container to be started with `--user`
 	if [ "$user" = '0' ]; then
-		find "$PGDATA" \! -user postgres -exec chown postgres '{}' +
-		find /var/run/postgresql \! -user postgres -exec chown postgres '{}' +
+		find "$PGDATA" \! -user postgres -exec chown postgres '{}'
+		find /var/run/postgresql \! -user postgres -exec chown postgres '{}'
 	fi
 }
 
@@ -272,15 +271,26 @@ _main() {
 		# setup data directories and permissions (when run as root)
 		docker_create_db_directories
 
-				# only run initialization on an empty data directory
+		# only run initialization on an empty data directory
 		if [ -z "$DATABASE_ALREADY_EXISTS" ]; then
 			# attempt to plant data seed
 			if exists "$PSQL_TAR_SEED"; then
 				echo "Planting psql data seed..."
-				tar -xzf "$PSQL_TAR_SEED" --absolute-names "$PSQL_DIR"
+				tar -xzf "$PSQL_TAR_SEED" --strip-components=4 -C "$PGDATA"
+
+				if [ "$(id -u)" = '0' ]; then
+					chown -R postgres:postgres $PGDATA
+					find /var/run/postgresql \! -user postgres -exec chown postgres '{}'
+					exec gosu postgres "$BASH_SOURCE" "$@"
+				fi
 			# if unable to seed db, resume normal init
 			else
 				echo "Resuming default init..."
+
+				if [ "$(id -u)" = '0' ]; then
+					# then restart script as postgres user
+					exec gosu postgres "$BASH_SOURCE" "$@"
+				fi
 				docker_verify_minimum_env
 				docker_init_database_dir
 				pg_setup_hba_conf
@@ -304,11 +314,11 @@ _main() {
 			echo
 			echo 'PostgreSQL Database directory appears to contain a database; Skipping initialization'
 			echo
-		fi
 
-		if [ "$(id -u)" = '0' ]; then
-			# then restart script as postgres user
-			exec gosu postgres "$BASH_SOURCE" "$@"
+			if [ "$(id -u)" = '0' ]; then
+				# then restart script as postgres user
+				exec gosu postgres "$BASH_SOURCE" "$@"
+			fi
 		fi
 	fi
 
