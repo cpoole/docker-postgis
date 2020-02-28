@@ -3,7 +3,6 @@ set -Eeo pipefail
 
 echo "Running forked & modified docker entrypoint..."
 
-PSQL_DIR="/var/lib/postgresql/"
 PSQL_TAR_SEED="/opt/postgres-seed.tar.gz"
 
 
@@ -277,10 +276,10 @@ _main() {
 			# attempt to plant data seed
 			if exists "$PSQL_TAR_SEED"; then
 				echo "Planting psql data seed..."
-				tar -xzf "$PSQL_TAR_SEED" --absolute-names "$PSQL_DIR"
+				tar -xzf "$PSQL_TAR_SEED" --strip-components=4 -C "$PGDATA"
 
 				if [ "$(id -u)" = '0' ]; then
-					find "$PSQL_TAR_SEED" \! -user postgres -exec chown postgres '{}' +
+					chown -R postgres:postgres $PGDATA
 					find /var/run/postgresql \! -user postgres -exec chown postgres '{}' +
 					exec gosu postgres "$BASH_SOURCE" "$@"
 				fi
