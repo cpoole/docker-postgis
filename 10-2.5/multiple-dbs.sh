@@ -6,9 +6,9 @@ set -x
 function create_user_and_database() {
   local database=$1
   echo "  Creating database '$database'"
-  psql -U $POSTGRES_USER -v ON_ERROR_STOP=1 -d postgres  <<-EOSQL
-      CREATE DATABASE $database;
-      GRANT ALL PRIVILEGES ON DATABASE $database TO $POSTGRES_USER;
+  psql -U $POSTGRES_USER -v ON_ERROR_STOP=1 -d postgres <<-EOSQL
+    CREATE DATABASE "$database";
+    GRANT ALL PRIVILEGES ON DATABASE "$database" TO $POSTGRES_USER;
 EOSQL
 }
 
